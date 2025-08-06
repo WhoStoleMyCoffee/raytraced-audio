@@ -160,6 +160,9 @@ var ray_casts_this_tick: int = 0
 var _reverb_effect: AudioEffectReverb
 var _pan_effect: AudioEffectPanner
 
+# Keep track of whether we've set up debug monitors
+var _debug_monitors_setup: bool = false
+
 
 func _enter_tree() -> void:
 	add_to_group(GROUP_NAME)
@@ -192,14 +195,40 @@ func _ready() -> void:
 	_setup_debug()
 
 
+func _exit_tree() -> void:
+	_cleanup_debug()
+
+
 func _setup_debug() -> void:
+	if _debug_monitors_setup:
+		return
+		
+	_debug_monitors_setup = true
+	
 	Performance.add_custom_monitor(&"raytraced_audio/raycast_updates", func():
+		# Check if this instance is still valid
+		if not is_instance_valid(self):
+			return 0
 		return ray_casts_this_tick
 	)
 
 	Performance.add_custom_monitor(&"raytraced_audio/enabled_players_count", func():
+		# Check if this instance is still valid and if we're in a scene tree
+		if not is_instance_valid(self) or not is_inside_tree():
+			return 0
 		return get_tree().get_node_count_in_group(RaytracedAudioPlayer3D.ENABLED_GROUP_NAME)
 	)
+
+
+func _cleanup_debug() -> void:
+	if not _debug_monitors_setup:
+		return
+		
+	_debug_monitors_setup = false
+	
+	# Remove the custom monitors
+	Performance.remove_custom_monitor(&"raytraced_audio/raycast_updates")
+	Performance.remove_custom_monitor(&"raytraced_audio/enabled_players_count")
 	
 
 
