@@ -89,7 +89,7 @@ func disable():
 		return
 
 	# Don't remove the fallback bus lol
-	if bus == ProjectSettings.get_setting("raytraced_audio/reverb_bus"):
+	if bus != ProjectSettings.get_setting("raytraced_audio/reverb_bus"):
 		_disable()
 		return
 	
