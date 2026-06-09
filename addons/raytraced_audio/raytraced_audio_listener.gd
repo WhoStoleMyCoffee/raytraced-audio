@@ -108,6 +108,9 @@ var rays: Array[AudioRay] = []
 		_update_ray_configuration()
 		ray_configuration_changed.emit()
 
+## Custom root for ray position calculations
+@export var custom_root: Node3D
+
 @export_category("Muffle")
 ## Enables [RaytracedAudioPlayer3D]s muffling behind walls
 @export var muffle_enabled: bool = true
@@ -186,7 +189,10 @@ func _ready() -> void:
 		_pan_effect = AudioServer.get_bus_effect(i, 0)
 
 	if is_enabled:
-		setup()
+		if custom_root:
+			call_deferred("setup")
+		else:
+			setup()
 
 	set_process(auto_update)
 	if is_enabled:
@@ -237,14 +243,21 @@ func setup() -> void:
 	for __ in rays_count:
 		var rc: AudioRay = AudioRay.new(max_raycast_dist, max_bounces)
 		rc.set_scatter_model(ray_scatter_model)
-		add_child(rc, INTERNAL_MODE_BACK)
+		# Add to the custom root if present
+		if custom_root:
+			custom_root.add_child(rc, INTERNAL_MODE_BACK)
+		else:
+			add_child(rc, INTERNAL_MODE_BACK)
 		rays.push_back(rc)
 
 
 ## Clears all created rays
 func clear():
 	for ray: AudioRay in rays:
-		remove_child(ray)
+		if custom_root:
+			custom_root.remove_child(ray)
+		else:
+			remove_child(ray)
 		ray.queue_free()
 	rays.clear()
 
